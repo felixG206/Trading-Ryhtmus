@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trading Rhythmus</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;700;800&display=swap');
+
+:root {
+–bg: #0a0a0f;
+–surface: #111118;
+–surface2: #16161f;
+–border: #1e1e2e;
+–accent: #c8f542;
+–accent2: #42f5a8;
+–red: #f54242;
+–text: #e8e8f0;
+–muted: #5a5a72;
+–muted2: #3a3a52;
+}
+
+- { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+background: var(–bg);
+color: var(–text);
+font-family: ‘DM Mono’, monospace;
+min-height: 100vh;
+overflow-x: hidden;
+}
+
+/* BG grid */
+body::before {
+content: ‘’;
+position: fixed;
+inset: 0;
+background-image:
+linear-gradient(var(–border) 1px, transparent 1px),
+linear-gradient(90deg, var(–border) 1px, transparent 1px);
+background-size: 40px 40px;
+opacity: 0.4;
+pointer-events: none;
+z-index: 0;
+}
+
+.app { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 24px 16px 80px; }
+
+/* Header */
+.header {
+display: flex;
+align-items: flex-start;
+justify-content: space-between;
+margin-bottom: 32px;
+padding-bottom: 20px;
+border-bottom: 1px solid var(–border);
+}
+.header-left h1 {
+font-family: ‘Syne’, sans-serif;
+font-size: 28px;
+font-weight: 800;
+letter-spacing: -1px;
+color: var(–accent);
+line-height: 1;
+}
+.header-left p { color: var(–muted); font-size: 11px; margin-top: 4px; letter-spacing: 2px; text-transform: uppercase; }
+.clock {
+text-align: right;
+font-size: 22px;
+font-weight: 500;
+color: var(–text);
+letter-spacing: -1px;
+}
+.clock-sub { font-size: 10px; color: var(–muted); letter-spacing: 2px; text-transform: uppercase; margin-top: 2px; }
+.session-badge {
+display: inline-block;
+margin-top: 6px;
+padding: 3px 8px;
+border-radius: 3px;
+font-size: 10px;
+font-weight: 500;
+letter-spacing: 1px;
+text-transform: uppercase;
+}
+.session-badge.active { background: rgba(200,245,66,0.15); color: var(–accent); border: 1px solid rgba(200,245,66,0.3); }
+.session-badge.macro { background: rgba(245,66,66,0.15); color: var(–red); border: 1px solid rgba(245,66,66,0.3); animation: pulse 1s infinite; }
+.session-badge.inactive { background: rgba(90,90,114,0.2); color: var(–muted); border: 1px solid var(–border); }
+
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+/* Tabs */
+.tabs {
+display: flex;
+gap: 4px;
+margin-bottom: 24px;
+background: var(–surface);
+padding: 4px;
+border-radius: 8px;
+border: 1px solid var(–border);
+}
+.tab {
+flex: 1;
+padding: 10px;
+background: transparent;
+border: none;
+color: var(–muted);
+font-family: ‘DM Mono’, monospace;
+font-size: 11px;
+letter-spacing: 1px;
+text-transform: uppercase;
+cursor: pointer;
+border-radius: 5px;
+transition: all 0.2s;
+}
+.tab.active { background: var(–accent); color: #0a0a0f; font-weight: 500; }
+.tab:hover:not(.active) { color: var(–text); background: var(–surface2); }
+
+/* Cards */
+.card {
+background: var(–surface);
+border: 1px solid var(–border);
+border-radius: 8px;
+padding: 20px;
+margin-bottom: 16px;
+}
+.card-title {
+font-family: ‘Syne’, sans-serif;
+font-size: 12px;
+font-weight: 700;
+letter-spacing: 3px;
+text-transform: uppercase;
+color: var(–muted);
+margin-bottom: 16px;
+display: flex;
+align-items: center;
+gap: 8px;
+}
+.card-title span { color: var(–accent); font-size: 14px; }
+
+/* Timeline */
+.timeline { display: flex; flex-direction: column; gap: 0; }
+.timeline-item {
+display: grid;
+grid-template-columns: 80px 1fr;
+gap: 16px;
+position: relative;
+padding-bottom: 20px;
+}
+.timeline-item:last-child { padding-bottom: 0; }
+.timeline-item::before {
+content: ‘’;
+position: absolute;
+left: 88px;
+top: 20px;
+bottom: 0;
+width: 1px;
+background: var(–border);
+}
+.timeline-item:last-child::before { display: none; }
+.tl-time {
+font-size: 11px;
+color: var(–muted);
+padding-top: 2px;
+text-align: right;
+}
+.tl-content { }
+.tl-dot {
+width: 8px;
+height: 8px;
+border-radius: 50%;
+background: var(–border);
+border: 2px solid var(–muted2);
+display: inline-block;
+margin-right: 10px;
+position: relative;
+top: 1px;
+flex-shrink: 0;
+}
+.tl-dot.active { background: var(–accent); border-color: var(–accent); box-shadow: 0 0 8px rgba(200,245,66,0.5); }
+.tl-dot.macro { background: var(–red); border-color: var(–red); box-shadow: 0 0 8px rgba(245,66,66,0.5); }
+.tl-label {
+font-size: 13px;
+color: var(–text);
+font-weight: 500;
+display: flex;
+align-items: center;
+}
+.tl-desc { font-size: 11px; color: var(–muted); margin-top: 4px; margin-left: 18px; line-height: 1.6; }
+
+/* Checklist */
+.checklist { display: flex; flex-direction: column; gap: 8px; }
+.check-item {
+display: flex;
+align-items: flex-start;
+gap: 12px;
+padding: 12px 14px;
+background: var(–surface2);
+border: 1px solid var(–border);
+border-radius: 6px;
+cursor: pointer;
+transition: all 0.15s;
+user-select: none;
+}
+.check-item:hover { border-color: var(–muted2); }
+.check-item.checked { border-color: rgba(200,245,66,0.3); background: rgba(200,245,66,0.05); }
+.check-box {
+width: 18px;
+height: 18px;
+border: 1.5px solid var(–muted2);
+border-radius: 3px;
+flex-shrink: 0;
+margin-top: 1px;
+display: flex;
+align-items: center;
+justify-content: center;
+transition: all 0.15s;
+}
+.check-item.checked .check-box { background: var(–accent); border-color: var(–accent); }
+.check-box::after { content: ‘✓’; font-size: 11px; color: #0a0a0f; opacity: 0; transition: opacity 0.15s; }
+.check-item.checked .check-box::after { opacity: 1; }
+.check-text { flex: 1; }
+.check-label { font-size: 12px; color: var(–text); }
+.check-item.checked .check-label { color: var(–muted); text-decoration: line-through; }
+.check-sub { font-size: 10px; color: var(–muted); margin-top: 2px; }
+.check-tag {
+font-size: 9px;
+padding: 2px 6px;
+border-radius: 2px;
+text-transform: uppercase;
+letter-spacing: 1px;
+flex-shrink: 0;
+margin-top: 2px;
+}
+.tag-htf { background: rgba(66,245,168,0.1); color: var(–accent2); border: 1px solid rgba(66,245,168,0.2); }
+.tag-entry { background: rgba(200,245,66,0.1); color: var(–accent); border: 1px solid rgba(200,245,66,0.2); }
+.tag-risk { background: rgba(245,66,66,0.1); color: var(–red); border: 1px solid rgba(245,66,66,0.2); }
+.tag-mm { background: rgba(150,100,245,0.1); color: #a87ef5; border: 1px solid rgba(150,100,245,0.2); }
+
+.section-label {
+font-size: 10px;
+color: var(–muted);
+letter-spacing: 2px;
+text-transform: uppercase;
+margin-bottom: 8px;
+margin-top: 4px;
+padding-left: 2px;
+}
+
+.progress-bar {
+height: 3px;
+background: var(–border);
+border-radius: 2px;
+margin-bottom: 20px;
+overflow: hidden;
+}
+.progress-fill {
+height: 100%;
+background: linear-gradient(90deg, var(–accent), var(–accent2));
+border-radius: 2px;
+transition: width 0.3s ease;
+}
+.progress-text { font-size: 10px; color: var(–muted); text-align: right; margin-top: -18px; margin-bottom: 20px; }
+
+.reset-btn {
+background: transparent;
+border: 1px solid var(–border);
+color: var(–muted);
+font-family: ‘DM Mono’, monospace;
+font-size: 10px;
+letter-spacing: 1px;
+text-transform: uppercase;
+padding: 6px 12px;
+border-radius: 4px;
+cursor: pointer;
+transition: all 0.15s;
+margin-top: 12px;
+}
+.reset-btn:hover { border-color: var(–muted); color: var(–text); }
+
+/* Journal */
+.journal-entry-form { display: flex; flex-direction: column; gap: 12px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group label { font-size: 10px; color: var(–muted); letter-spacing: 1px; text-transform: uppercase; }
+.form-group input, .form-group select, .form-group textarea {
+background: var(–surface2);
+border: 1px solid var(–border);
+border-radius: 5px;
+color: var(–text);
+font-family: ‘DM Mono’, monospace;
+font-size: 12px;
+padding: 10px 12px;
+outline: none;
+transition: border-color 0.15s;
+width: 100%;
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(–accent); }
+.form-group textarea { resize: vertical; min-height: 80px; }
+.form-group select option { background: var(–surface2); }
+
+.save-btn {
+background: var(–accent);
+border: none;
+color: #0a0a0f;
+font-family: ‘DM Mono’, monospace;
+font-size: 12px;
+font-weight: 500;
+letter-spacing: 1px;
+padding: 12px 20px;
+border-radius: 5px;
+cursor: pointer;
+transition: all 0.15s;
+text-transform: uppercase;
+}
+.save-btn:hover { background: var(–accent2); }
+
+.journal-list { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+.journal-entry {
+background: var(–surface2);
+border: 1px solid var(–border);
+border-radius: 6px;
+padding: 14px;
+display: grid;
+grid-template-columns: auto 1fr auto;
+gap: 14px;
+align-items: start;
+}
+.je-side {
+width: 36px;
+height: 36px;
+border-radius: 4px;
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 14px;
+font-weight: 700;
+font-family: ‘Syne’, sans-serif;
+}
+.je-side.long { background: rgba(200,245,66,0.15); color: var(–accent); }
+.je-side.short { background: rgba(245,66,66,0.15); color: var(–red); }
+.je-body {}
+.je-instrument { font-size: 13px; font-weight: 500; color: var(–text); }
+.je-meta { font-size: 10px; color: var(–muted); margin-top: 3px; }
+.je-notes { font-size: 11px; color: var(–muted); margin-top: 6px; font-style: italic; }
+.je-pnl {
+font-size: 14px;
+font-weight: 500;
+font-family: ‘Syne’, sans-serif;
+text-align: right;
+}
+.je-pnl.pos { color: var(–accent); }
+.je-pnl.neg { color: var(–red); }
+.je-date { font-size: 10px; color: var(–muted); margin-top: 4px; text-align: right; }
+
+.empty-state {
+text-align: center;
+padding: 40px 20px;
+color: var(–muted);
+font-size: 12px;
+}
+.empty-state div { font-size: 28px; margin-bottom: 12px; opacity: 0.3; }
+
+/* Bias panel */
+.bias-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.bias-card {
+background: var(–surface2);
+border: 1px solid var(–border);
+border-radius: 6px;
+padding: 14px;
+}
+.bias-card label { font-size: 10px; color: var(–muted); letter-spacing: 1px; text-transform: uppercase; display: block; margin-bottom: 8px; }
+.bias-options { display: flex; gap: 6px; flex-wrap: wrap; }
+.bias-opt {
+padding: 5px 10px;
+border-radius: 3px;
+font-size: 11px;
+border: 1px solid var(–border);
+background: transparent;
+color: var(–muted);
+cursor: pointer;
+font-family: ‘DM Mono’, monospace;
+transition: all 0.15s;
+}
+.bias-opt:hover { border-color: var(–muted); color: var(–text); }
+.bias-opt.selected-bull { background: rgba(200,245,66,0.15); border-color: var(–accent); color: var(–accent); }
+.bias-opt.selected-bear { background: rgba(245,66,66,0.15); border-color: var(–red); color: var(–red); }
+.bias-opt.selected-neu { background: rgba(90,90,114,0.2); border-color: var(–muted); color: var(–text); }
+
+.bias-notes {
+background: var(–surface2);
+border: 1px solid var(–border);
+border-radius: 5px;
+color: var(–text);
+font-family: ‘DM Mono’, monospace;
+font-size: 12px;
+padding: 10px 12px;
+outline: none;
+width: 100%;
+min-height: 70px;
+resize: vertical;
+margin-top: 10px;
+transition: border-color 0.15s;
+}
+.bias-notes:focus { border-color: var(–accent); }
+.bias-notes::placeholder { color: var(–muted2); }
+
+.save-bias-btn {
+margin-top: 12px;
+background: transparent;
+border: 1px solid var(–accent);
+color: var(–accent);
+font-family: ‘DM Mono’, monospace;
+font-size: 10px;
+letter-spacing: 1px;
+text-transform: uppercase;
+padding: 8px 16px;
+border-radius: 4px;
+cursor: pointer;
+transition: all 0.15s;
+}
+.save-bias-btn:hover { background: var(–accent); color: #0a0a0f; }
+
+.bias-saved {
+display: none;
+font-size: 10px;
+color: var(–accent);
+margin-top: 8px;
+letter-spacing: 1px;
+}
+
+.hidden { display: none; }
+</style>
+
+</head>
+<body>
+<div class="app">
+
+  <!-- Header -->
+
+  <div class="header">
+    <div class="header-left">
+      <h1>TRADING RHYTHMUS</h1>
+      <p>Futures · Liquidität · MMM · NYSE</p>
+    </div>
+    <div>
+      <div class="clock" id="clock">--:--:--</div>
+      <div class="clock-sub">CET</div>
+      <div id="session-badge" class="session-badge inactive">—</div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('routine')">Tagesroutine</button>
+    <button class="tab" onclick="showTab('checklist')">Checkliste</button>
+    <button class="tab" onclick="showTab('journal')">Journal</button>
+  </div>
+
+  <!-- TAB: ROUTINE -->
+
+  <div id="tab-routine">
+    <!-- Bias Panel -->
+    <div class="card">
+      <div class="card-title"><span>◈</span> Heutiger HTF Bias</div>
+      <div class="bias-grid">
+        <div class="bias-card">
+          <label>Weekly Bias</label>
+          <div class="bias-options">
+            <button class="bias-opt" data-group="weekly" data-dir="bull" onclick="setBias('weekly','bull',this)">▲ Bullish</button>
+            <button class="bias-opt" data-group="weekly" data-dir="bear" onclick="setBias('weekly','bear',this)">▼ Bearish</button>
+            <button class="bias-opt" data-group="weekly" data-dir="neu" onclick="setBias('weekly','neu',this)">— Neutral</button>
+          </div>
+        </div>
+        <div class="bias-card">
+          <label>Daily Bias</label>
+          <div class="bias-options">
+            <button class="bias-opt" data-group="daily" data-dir="bull" onclick="setBias('daily','bull',this)">▲ Bullish</button>
+            <button class="bias-opt" data-group="daily" data-dir="bear" onclick="setBias('daily','bear',this)">▼ Bearish</button>
+            <button class="bias-opt" data-group="daily" data-dir="neu" onclick="setBias('daily','neu',this)">— Neutral</button>
+          </div>
+        </div>
+      </div>
+      <textarea class="bias-notes" id="bias-notes" placeholder="Schlüssellevels, BSL/SSL Zonen, Kontext für heute..."></textarea>
+      <div>
+        <button class="save-bias-btn" onclick="saveBias()">Bias speichern</button>
+        <div class="bias-saved" id="bias-saved">✓ Gespeichert</div>
+      </div>
+    </div>
+
+```
+<!-- Timeline -->
+<div class="card">
+  <div class="card-title"><span>◷</span> Tagesablauf – NY Session</div>
+  <div class="timeline">
+
+    <div class="timeline-item">
+      <div class="tl-time">13:30</div>
+      <div class="tl-content">
+        <div class="tl-label"><span class="tl-dot"></span>Pre-Session Analyse</div>
+        <div class="tl-desc">HTF Bias bestätigen (1W/1D) · BSL/SSL markieren · MMM Phase einschätzen · Asia Range notieren</div>
+      </div>
+    </div>
+
+    <div class="timeline-item">
+      <div class="tl-time">14:30</div>
+      <div class="tl-content">
+        <div class="tl-label"><span class="tl-dot active"></span>NY Open – Kill Zone</div>
+        <div class="tl-desc">Liquiditäts-Hunt beobachten · Equal Highs/Lows prüfen · Stop Hunt + CHoCH abwarten · FVG identifizieren</div>
+      </div>
+    </div>
+
+    <div class="timeline-item">
+      <div class="tl-time">15:30</div>
+      <div class="tl-content">
+        <div class="tl-label"><span class="tl-dot active"></span>NYSE Open</div>
+        <div class="tl-desc">Erhöhte Volatilität · Manipulation Phase prüfen · Ersten sauberen Setup abwarten · Risk Management aktiv</div>
+      </div>
+    </div>
+
+    <div class="timeline-item">
+      <div class="tl-time">XX:50</div>
+      <div class="tl-content">
+        <div class="tl-label"><span class="tl-dot macro"></span>Macro Start</div>
+        <div class="tl-desc">Keine neuen Entries! · Offene Positionen prüfen · Stops ggf. sichern · Marktbewegung beobachten</div>
+      </div>
+    </div>
+
+    <div class="timeline-item">
+      <div class="tl-time">XX:10</div>
+      <div class="tl-content">
+        <div class="tl-label"><span class="tl-dot macro"></span>Macro Ende</div>
+        <div class="tl-desc">Setup neu evaluieren · Neuer Bias nach Macro · Nächste Liquiditätszone als TP prüfen</div>
+      </div>
+    </div>
+
+    <div class="timeline-item">
+      <div class="tl-time">17:00</div>
+      <div class="tl-content">
+        <div class="tl-label"><span class="tl-dot"></span>Mid-Session Check</div>
+        <div class="tl-desc">Distribution Phase? · BSL/SSL erreicht? · Partielle Position bei erster Zone · Bias noch valide?</div>
+      </div>
+    </div>
+
+    <div class="timeline-item">
+      <div class="tl-time">22:00</div>
+      <div class="tl-content">
+        <div class="tl-label"><span class="tl-dot"></span>Session End & Review</div>
+        <div class="tl-desc">Alle Positionen schließen · Journal eintragen · Was hat das MMM heute gezeigt? · Morgen vorbereiten</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+```
+
+  </div>
+
+  <!-- TAB: CHECKLISTE -->
+
+  <div id="tab-checklist" class="hidden">
+
+```
+<div class="progress-bar">
+  <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+</div>
+<div class="progress-text" id="progress-text">0 / 0 abgehakt</div>
+
+<div class="card">
+  <div class="card-title"><span>◈</span> A — HTF Analyse (Pre-Session)</div>
+  <div class="section-label">Top-Down Bias</div>
+  <div class="checklist" id="checklist-htf">
+    <div class="check-item" onclick="toggleCheck(this)">
+      <div class="check-box"></div>
+      <div class="check-text">
+        <div class="check-label">Weekly Chart analysiert – Bias bullish/bearish?</div>
+        <div class="check-sub">BSL oder SSL als primäres Ziel identifiziert</div>
+      </div>
+      <span class="check-tag tag-htf">1W</span>
+    </div>
+    <div class="check-item" onclick="toggleCheck(this)">
+      <div class="check-box"></div>
+      <div class="check-text">
+        <div class="check-label">Daily Chart – Equal Highs / Equal Lows markiert</div>
+        <div class="check-sub">Wo liegt die nächste erreichbare Liquidität?</div>
+      </div>
+      <span class="check-tag tag-htf">1D</span>
+    </div>
+    <div class="check-item" onclick="toggleCheck(this)">
+      <div class="check-box"></div>
+      <div class="check-text">
+        <div class="check-label">4H Struktur – Market Maker Model Phase eingeschätzt</div>
+        <div class="check-sub">Accumulation / Manipulation / Distribution?</div>
+      </div>
+      <span class="check-tag tag-mm">MMM</span>
+    </div>
+    <div class="check-item" onclick="toggleCheck(this)">
+      <div class="check-box"></div>
+      <div class="check-text">
+        <div class="check-label">1H Kontext – Trendstruktur auf mittlerem TF</div>
+        <div class="check-sub">HH/HL oder LH/LL? Passt zum HTF Bias?</div>
+      </div>
+      <span class="check-tag tag-htf">1H</span>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title"><span>◈</span> B — Liquidität & Setup</div>
+  <div class="section-label">Kill Zone & Trigger</div>
+  <div class="checklist" id="checklist-setup">
+    <div class="check-item" onclick="toggleCheck(this)">
+      <div class="check-box"></div>
+      <div class="check-text">
+        <div class="check-label">NY Kill Zone aktiv (14:30–16:30 CET)</div>
+        <div class="check-sub">Oder NYSE Open (15:30+) – Uhrzeit bestätigt?</div>
+      </div>
+      <span class="check-tag tag-entry">Zeit</span>
+    </div>
+    <div class="check-item" onclick="toggleCheck(this)">
+      <div class="check-box"></div>
+      <div class="check-text">
+        <div class="check-label">Kein aktives Macro-Fenster (XX:50–XX:10)</div>
+        <div class="check-sub">Macro läuft = kein Entry</div>
+      </div>
+      <span class="check-tag tag-risk">Macro</span>
+    </div>
+    <div class="check-item" onclick="toggleCheck(this)">
+      <div class="check-box"></div>
+      <div class="check-text">
+        <div class="check-label">Stop Hunt / Liquidity Grab sichtbar</div>
+        <div class="check-sub">BSL oder SSL wurde engineered – Manipulation sichtbar</div>
+      </div>
+      <span class="check-tag tag-mm">MMM</span>
+    </div>
+    <div class="check-item" onclick="toggleCheck(this)">
+      <div class="check-box"></div>
+      <div class="check-text">
+        <div class="check-label">CHoCH nach Stop Hunt bestätigt</div>
+        <div class="check-sub">Market Structure Shift auf LTF sichtbar (15M/5M)</div>
+      </div>
+      <span class="check-tag tag-entry">Confirm</span>
+    </div>
+    <div class="check-item" onclick="toggleCheck(this)">
+      <div class="check-box"></div>
+      <div class="check-text">
+        <div class="check-label">Fair Value Gap (FVG) als Entry identifiziert</div>
+        <div class="check-sub">FVG liegt im Kontext des CHoCH – Imbalance klar</div>
+      </div>
+      <span class="check-tag tag-entry">FVG</span>
+    </div>
+    <div class="check-item" onclick="toggleCheck(this)">
+      <div class="check-box"></div>
+      <div class="check-text">
+        <div class="check-label">Setup aligned mit HTF Bias</div>
+        <div class="check-sub">Counter-Trend nur wenn Setup außergewöhnlich stark</div>
+      </div>
+      <span class="check-tag tag-htf">Bias</span>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title"><span>◈</span> C — Risk Management</div>
+  <div class="checklist" id="checklist-risk">
+    <div class="check-item" onclick="toggleCheck(this)">
+      <div class="check-box"></div>
+      <div class="check-text">
+        <div class="check-label">Daily Loss Limit noch nicht erreicht</div>
+        <div class="check-sub">Bei Erreichen: Session sofort beenden</div>
+      </div>
+      <span class="check-tag tag-risk">Limit</span>
+    </div>
+    <div class="check-item" onclick="toggleCheck(this)">
+      <div class="check-box"></div>
+      <div class="check-text">
+        <div class="check-label">Stop Loss gesetzt – hinter Liquiditätzone</div>
+        <div class="check-sub">Nicht zu eng – Stop Hunt Spielraum lassen</div>
+      </div>
+      <span class="check-tag tag-risk">SL</span>
+    </div>
+    <div class="check-item" onclick="toggleCheck(this)">
+      <div class="check-box"></div>
+      <div class="check-text">
+        <div class="check-label">Take Profit = nächste BSL / SSL Zone</div>
+        <div class="check-sub">TP klar definiert vor Entry</div>
+      </div>
+      <span class="check-tag tag-risk">TP</span>
+    </div>
+    <div class="check-item" onclick="toggleCheck(this)">
+      <div class="check-box"></div>
+      <div class="check-text">
+        <div class="check-label">Maximale Anzahl Trades heute nicht überschritten</div>
+        <div class="check-sub">Qualität über Quantität</div>
+      </div>
+      <span class="check-tag tag-risk">Limit</span>
+    </div>
+  </div>
+</div>
+
+<button class="reset-btn" onclick="resetChecklist()">↺ Checkliste zurücksetzen</button>
+```
+
+  </div>
+
+  <!-- TAB: JOURNAL -->
+
+  <div id="tab-journal" class="hidden">
+    <div class="card">
+      <div class="card-title"><span>◈</span> Trade eintragen</div>
+      <div class="journal-entry-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Instrument</label>
+            <input type="text" id="j-instrument" placeholder="z.B. ES, NQ, CL, GC">
+          </div>
+          <div class="form-group">
+            <label>Datum & Uhrzeit</label>
+            <input type="datetime-local" id="j-datetime">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Richtung</label>
+            <select id="j-direction">
+              <option value="long">▲ Long</option>
+              <option value="short">▼ Short</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Ergebnis (R oder Punkte)</label>
+            <input type="text" id="j-result" placeholder="z.B. +2R oder -1R">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>MMM Phase</label>
+            <select id="j-mmm">
+              <option value="">— wählen</option>
+              <option value="Accumulation">Accumulation</option>
+              <option value="Manipulation">Manipulation / Stop Hunt</option>
+              <option value="Distribution">Distribution</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Session</label>
+            <select id="j-session">
+              <option value="NY Open">NY Open (14:30–15:30)</option>
+              <option value="NYSE Open">NYSE Open (15:30+)</option>
+              <option value="Macro">Macro</option>
+              <option value="Mid Session">Mid Session</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Setup & Notizen</label>
+          <textarea id="j-notes" placeholder="FVG auf 5M · CHoCH nach Stop Hunt auf SSL · Bias bullish · Entry 14:52 · TP = BSL Weekly..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Learnings / Fehler</label>
+          <textarea id="j-learning" placeholder="Was lief gut? Was würde ich anders machen?"></textarea>
+        </div>
+        <button class="save-btn" onclick="saveJournal()">Trade speichern</button>
+      </div>
+    </div>
+
+```
+<div id="journal-list" class="journal-list"></div>
+```
+
+  </div>
+
+</div>
+
+<script>
+// ---- Clock & Session ----
+function updateClock() {
+  const now = new Date();
+  const cet = new Date(now.toLocaleString('en-US', {timeZone: 'Europe/Berlin'}));
+  const h = String(cet.getHours()).padStart(2,'0');
+  const m = String(cet.getMinutes()).padStart(2,'0');
+  const s = String(cet.getSeconds()).padStart(2,'0');
+  document.getElementById('clock').textContent = `${h}:${m}:${s}`;
+
+  const totalMin = cet.getHours() * 60 + cet.getMinutes();
+  const min = cet.getMinutes();
+  const badge = document.getElementById('session-badge');
+
+  // Macro window: XX:50–XX:10
+  const isMacro = min >= 50 || min <= 10;
+
+  if (isMacro) {
+    badge.textContent = '⚡ MACRO ACTIVE';
+    badge.className = 'session-badge macro';
+  } else if (totalMin >= 14*60+30 && totalMin <= 22*60) {
+    if (totalMin >= 15*60+30) {
+      badge.textContent = '▲ NYSE SESSION';
+    } else {
+      badge.textContent = '▲ NY KILL ZONE';
+    }
+    badge.className = 'session-badge active';
+  } else {
+    badge.textContent = '— PRE-SESSION';
+    badge.className = 'session-badge inactive';
+  }
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ---- Tabs ----
+function showTab(name) {
+  ['routine','checklist','journal'].forEach(t => {
+    document.getElementById('tab-'+t).classList.add('hidden');
+  });
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.remove('hidden');
+  event.target.classList.add('active');
+}
+
+// ---- Bias ----
+function setBias(group, dir, btn) {
+  document.querySelectorAll(`[data-group="${group}"]`).forEach(b => {
+    b.classList.remove('selected-bull','selected-bear','selected-neu');
+  });
+  btn.classList.add('selected-'+dir);
+  localStorage.setItem('bias-'+group, dir);
+}
+
+function saveBias() {
+  const notes = document.getElementById('bias-notes').value;
+  localStorage.setItem('bias-notes', notes);
+  const saved = document.getElementById('bias-saved');
+  saved.style.display = 'block';
+  setTimeout(() => saved.style.display = 'none', 2000);
+}
+
+function loadBias() {
+  ['weekly','daily'].forEach(g => {
+    const dir = localStorage.getItem('bias-'+g);
+    if (dir) {
+      const btn = document.querySelector(`[data-group="${g}"][data-dir="${dir}"]`);
+      if (btn) btn.classList.add('selected-'+dir);
+    }
+  });
+  const notes = localStorage.getItem('bias-notes');
+  if (notes) document.getElementById('bias-notes').value = notes;
+}
+
+// ---- Checklist ----
+let checks = JSON.parse(localStorage.getItem('checks') || '{}');
+
+function toggleCheck(el) {
+  el.classList.toggle('checked');
+  const id = Array.from(el.parentNode.children).indexOf(el);
+  const group = el.closest('.card').querySelector('.card-title').textContent.trim().slice(2,3);
+  const key = group + id;
+  checks[key] = el.classList.contains('checked');
+  localStorage.setItem('checks', JSON.stringify(checks));
+  updateProgress();
+}
+
+function updateProgress() {
+  const all = document.querySelectorAll('.check-item');
+  const done = document.querySelectorAll('.check-item.checked');
+  const pct = all.length ? Math.round(done.length / all.length * 100) : 0;
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-text').textContent = `${done.length} / ${all.length} abgehakt`;
+}
+
+function resetChecklist() {
+  document.querySelectorAll('.check-item').forEach(el => el.classList.remove('checked'));
+  checks = {};
+  localStorage.setItem('checks', JSON.stringify(checks));
+  updateProgress();
+}
+
+function loadChecks() {
+  document.querySelectorAll('#tab-checklist .card').forEach((card, gi) => {
+    const group = card.querySelector('.card-title').textContent.trim().slice(2,3);
+    card.querySelectorAll('.check-item').forEach((el, i) => {
+      const key = group + i;
+      if (checks[key]) el.classList.add('checked');
+    });
+  });
+  updateProgress();
+}
+
+// ---- Journal ----
+let journal = JSON.parse(localStorage.getItem('journal') || '[]');
+
+// Set default datetime
+function setDefaultDatetime() {
+  const now = new Date();
+  const offset = now.getTimezoneOffset() * 60000;
+  const local = new Date(now - offset);
+  document.getElementById('j-datetime').value = local.toISOString().slice(0,16);
+}
+
+function saveJournal() {
+  const entry = {
+    id: Date.now(),
+    instrument: document.getElementById('j-instrument').value || '—',
+    datetime: document.getElementById('j-datetime').value,
+    direction: document.getElementById('j-direction').value,
+    result: document.getElementById('j-result').value || '—',
+    mmm: document.getElementById('j-mmm').value,
+    session: document.getElementById('j-session').value,
+    notes: document.getElementById('j-notes').value,
+    learning: document.getElementById('j-learning').value
+  };
+  journal.unshift(entry);
+  localStorage.setItem('journal', JSON.stringify(journal));
+  renderJournal();
+  // Clear form
+  document.getElementById('j-instrument').value = '';
+  document.getElementById('j-result').value = '';
+  document.getElementById('j-notes').value = '';
+  document.getElementById('j-learning').value = '';
+  setDefaultDatetime();
+}
+
+function renderJournal() {
+  const list = document.getElementById('journal-list');
+  if (!journal.length) {
+    list.innerHTML = '<div class="empty-state"><div>◎</div>Noch keine Trades eingetragen.<br>Füge deinen ersten Trade oben hinzu.</div>';
+    return;
+  }
+  list.innerHTML = journal.map(e => {
+    const isPos = e.result.startsWith('+');
+    const dt = e.datetime ? new Date(e.datetime).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—';
+    return `
+    <div class="journal-entry">
+      <div class="je-side ${e.direction}">${e.direction === 'long' ? 'L' : 'S'}</div>
+      <div class="je-body">
+        <div class="je-instrument">${e.instrument} <span style="color:var(--muted);font-size:10px">${e.mmm ? '· ' + e.mmm : ''} · ${e.session}</span></div>
+        <div class="je-meta">${dt}</div>
+        ${e.notes ? `<div class="je-notes">${e.notes}</div>` : ''}
+        ${e.learning ? `<div class="je-notes" style="color:var(--accent2)">↳ ${e.learning}</div>` : ''}
+      </div>
+      <div>
+        <div class="je-pnl ${isPos ? 'pos' : 'neg'}">${e.result}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// Init
+loadBias();
+loadChecks();
+renderJournal();
+setDefaultDatetime();
+</script>
+
+</body>
+</html>
